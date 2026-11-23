@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>Worship Music</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --navy-950: #0a1122;
+        --navy-900: #0e1830;
+        --navy-800: #14213f;
+        --navy-700: #1d2f57;
+        --line: #2b3d68;
+        --gold: #d4af5a;
+        --gold-bright: #ecc97a;
+        --gold-deep: #a9832f;
+        --ink: #f2ecdd;
+        --ink-soft: #c3cbdd;
+        --ink-dim: #8d99b5;
+        --danger: #e08a7a;
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(1100px 500px at 50% -120px, rgba(212, 175, 90, 0.10), transparent 60%),
+          linear-gradient(180deg, var(--navy-900), var(--navy-950) 420px);
+        background-color: var(--navy-950);
+        color: var(--ink);
+        font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+      .wrap { max-width: 880px; margin: 0 auto; padding: 20px 16px 48px; }
+
+      /* ---------- Heading ---------- */
+      .page-head { text-align: center; padding: 14px 0 20px; }
+      .page-head h1 {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 700;
+        font-size: clamp(2.1rem, 6vw, 3rem);
+        margin: 0;
+        color: var(--ink);
+      }
+      .page-head .verse {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-style: italic;
+        font-size: clamp(1.05rem, 3.4vw, 1.25rem);
+        color: var(--gold-bright);
+        margin: 8px auto 0;
+        max-width: 560px;
+      }
+      .rule {
+        width: 72px; height: 2px; margin: 16px auto 0;
+        background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      }
+
+      /* ---------- Player ---------- */
+      .player-card {
+        background: var(--navy-800);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      }
+      .player-frame {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        width: 100%;
+        background: #05080f;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .stage { position: absolute; inset: 0; display: none; }
+      .stage.on { display: flex; }
+      .stage-empty {
+        align-items: center; justify-content: center; text-align: center;
+        padding: 24px; color: var(--ink-soft); flex-direction: column; gap: 6px;
+      }
+      .stage-empty .big {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: clamp(1.3rem, 4.5vw, 1.7rem); color: var(--ink); margin: 0;
+      }
+      .stage-empty p { margin: 0; }
+      .stage-audio { align-items: center; justify-content: center; overflow: hidden; }
+      .stage-audio .backdrop {
+        position: absolute; inset: -30px; background-size: cover; background-position: center;
+        filter: blur(28px) brightness(0.45); opacity: 0.85;
+      }
+      .stage-audio img.art {
+        position: relative; height: 82%; max-width: 82%; aspect-ratio: 1 / 1;
+        object-fit: cover; border-radius: 10px;
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+        border: 1px solid rgba(212, 175, 90, 0.35);
+      }
+      .stage-audio .preview-badge {
+        position: absolute; left: 12px; bottom: 12px;
+        background: rgba(5, 8, 15, 0.78); color: var(--gold-bright);
+        font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+        padding: 5px 9px; border-radius: 999px; border: 1px solid rgba(212, 175, 90, 0.4);
+      }
+      .now-playing { padding: 14px 4px 4px; text-align: center; }
+      .now-label {
+        font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase;
+        color: var(--gold); font-weight: 700; margin: 0;
+      }
+      .now-title {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 600;
+        margin: 4px 0 0; line-height: 1.15;
+      }
+      .now-artist { color: var(--ink-soft); margin: 2px 0 0; font-size: 1rem; }
+      .now-source { color: var(--ink-dim); margin: 4px 0 0; font-size: 0.85rem; min-height: 1.2em; }
+
+      .controls {
+        display: flex; align-items: center; justify-content: center;
+        gap: 14px; padding: 14px 0 6px;
+      }
+      .ctl-btn {
+        appearance: none; border: 1px solid var(--line);
+        background: var(--navy-700); color: var(--ink);
+        width: 52px; height: 52px; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; padding: 0;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .ctl-btn:hover { background: #26396a; border-color: var(--gold-deep); }
+      .ctl-btn.main {
+        width: 64px; height: 64px;
+        background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+        border-color: var(--gold-deep); color: #241a04;
+      }
+      .ctl-btn.main:hover { background: linear-gradient(180deg, #f4d98d, var(--gold-bright)); }
+      .ctl-btn svg { width: 24px; height: 24px; fill: currentColor; }
+      .ctl-btn.main svg { width: 30px; height: 30px; }
+      .ctl-btn:disabled { opacity: 0.4; cursor: default; }
+      .ctl-btn:disabled:hover { background: var(--navy-700); border-color: var(--line); }
+      .ctl-btn.main:disabled:hover { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); }
+      button:focus-visible, input:focus-visible, a:focus-visible {
+        outline: 2px solid var(--gold); outline-offset: 2px;
+      }
+
+      /* ---------- Sections ---------- */
+      section { margin-top: 34px; }
+      .section-head {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 12px; flex-wrap: wrap; margin-bottom: 12px;
+      }
+      h2 {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 1.7rem; font-weight: 700; margin: 0; color: var(--ink);
+      }
+      .section-note { color: var(--ink-dim); font-size: 0.9rem; margin: 0; }
+
+      .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+      .search-row input {
+        flex: 1 1 auto; min-width: 0; min-height: 46px;
+        padding: 10px 14px;
+        background: var(--navy-800);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--ink);
+        font: inherit; font-size: 1rem;
+      }
+      .search-row input::placeholder { color: var(--ink-dim); }
+      .search-status { color: var(--ink-soft); font-size: 0.92rem; margin: 0 0 10px; min-height: 1.2em; }
+      .search-status.error { color: var(--danger); }
+
+      /* ---------- Song rows ---------- */
+      .song-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      .song-row {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        background: var(--navy-800);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .song-row.playing { border-color: var(--gold-deep); background: #182a52; }
+      .song-row img.thumb {
+        width: 52px; height: 52px; border-radius: 7px; object-fit: cover; flex: none;
+        border: 1px solid var(--line); background: var(--navy-700);
+      }
+      .song-row .num {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 1.25rem; font-weight: 600; color: var(--gold);
+        width: 1.4em; text-align: center; flex: none;
+      }
+      .song-meta { flex: 1 1 auto; min-width: 0; }
+      .song-title { font-weight: 600; font-size: 1.02rem; margin: 0; overflow-wrap: anywhere; }
+      .song-artist { color: var(--ink-soft); font-size: 0.9rem; margin: 0; overflow-wrap: anywhere; }
+      .song-badges { display: flex; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+      .badge {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+        padding: 2px 7px; border-radius: 999px; border: 1px solid var(--gold);
+        color: #241a04; background: var(--gold);
+      }
+      .row-actions { display: flex; gap: 8px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+
+      .btn {
+        appearance: none; cursor: pointer; font: inherit; font-weight: 600;
+        min-height: 40px; padding: 8px 14px; border-radius: 8px;
+        border: 1px solid var(--line); background: var(--navy-700); color: var(--ink);
+        display: inline-flex; align-items: center; gap: 7px;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .btn:hover { background: #26396a; border-color: var(--gold-deep); }
+      .btn svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
+      .btn.gold {
+        background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+        border-color: var(--gold-deep); color: #241a04;
+      }
+      .btn.gold:hover { background: linear-gradient(180deg, #f4d98d, var(--gold-bright)); }
+      .btn.ghost { background: transparent; }
+      .btn.added { border-color: var(--gold-deep); color: var(--gold-bright); }
+      .btn:disabled { opacity: 0.45; cursor: default; }
+      .btn:disabled:hover { background: var(--navy-700); border-color: var(--line); }
+      .btn.gold:disabled:hover { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); }
+
+      .icon-btn {
+        appearance: none; cursor: pointer;
+        width: 40px; height: 40px; border-radius: 8px; flex: none;
+        border: 1px solid var(--line); background: var(--navy-700); color: var(--ink);
+        display: inline-flex; align-items: center; justify-content: center; padding: 0;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .icon-btn:hover { background: #26396a; border-color: var(--gold-deep); }
+      .icon-btn svg { width: 17px; height: 17px; fill: currentColor; }
+      .icon-btn.remove:hover { border-color: var(--danger); color: var(--danger); }
+      .icon-btn:disabled { opacity: 0.35; cursor: default; }
+      .icon-btn:disabled:hover { background: var(--navy-700); border-color: var(--line); color: var(--ink); }
+
+      .empty-note {
+        border: 1px dashed var(--line); border-radius: 10px;
+        padding: 22px 16px; text-align: center; color: var(--ink-soft);
+        background: rgba(20, 33, 63, 0.45);
+      }
+      .empty-note p { margin: 0; }
+      .playlist-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+      /* ---------- How it works ---------- */
+      .how {
+        margin-top: 34px;
+        background: var(--navy-800);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 20px;
+      }
+      .how h2 { font-size: 1.4rem; margin-bottom: 6px; }
+      .how p { margin: 0 0 8px; color: var(--ink-soft); }
+      .how p:last-child { margin-bottom: 0; }
+      .how strong { color: var(--gold-bright); font-weight: 600; }
+
+      /* ---------- Other sites ---------- */
+      .other-sites { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 22px; }
+      .other-sites h2 { font-size: 1.4rem; margin-bottom: 10px; }
+      .site-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      .site-links a {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        min-height: 48px; padding: 10px 14px;
+        background: var(--navy-800); border: 1px solid var(--line); border-radius: 10px;
+        color: var(--ink); text-decoration: none; font-weight: 600;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .site-links a:hover { border-color: var(--gold-deep); background: #182a52; }
+      .site-links .arrow { color: var(--gold); font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.3rem; line-height: 1; }
+
+      footer { margin-top: 30px; text-align: center; color: var(--ink-dim); font-size: 0.85rem; }
+      footer .verse-line {
+        font-family: "Cormorant Garamond", Georgia, serif; font-style: italic;
+        font-size: 1rem; color: var(--ink-soft);
+      }
+
+      @media (max-width: 560px) {
+        .row-actions { width: 100%; justify-content: stretch; }
+        .row-actions .btn { flex: 1 1 auto; justify-content: center; }
+        .row-actions .icon-btn { flex: 0 0 40px; }
+        .playlist-actions .btn { flex: 1 1 auto; justify-content: center; }
+        .search-row { flex-wrap: wrap; }
+        .search-row .btn { width: 100%; justify-content: center; }
+        .controls { gap: 10px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="page-head">
+        <h1>Worship Music</h1>
+        <p class="verse">&ldquo;Sing to the Lord a new song; sing to the Lord, all the earth.&rdquo; &mdash; Psalm 96:1</p>
+        <div class="rule" aria-hidden="true"></div>
+      </header>
+
+      <!-- Player -->
+      <div class="player-card">
+        <div class="player-frame">
+          <div class="stage stage-empty on" id="stage-empty">
+            <p class="big">No song selected yet</p>
+            <p>Search for a worship song below, add it to My Songs, and tap Play.</p>
+          </div>
+          <div class="stage stage-audio" id="stage-audio">
+            <div class="backdrop" id="audio-backdrop"></div>
+            <img class="art" id="audio-art" alt="" />
+            <span class="preview-badge">30-second preview</span>
+          </div>
+        </div>
+        <div class="now-playing" aria-live="polite">
+          <p class="now-label">Now Playing</p>
+          <p class="now-title" id="now-title">Nothing playing</p>
+          <p class="now-artist" id="now-artist"></p>
+          <p class="now-source" id="now-source"></p>
+        </div>
+        <div class="controls">
+          <button class="ctl-btn" id="btn-prev" type="button" aria-label="Previous song" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg>
+          </button>
+          <button class="ctl-btn main" id="btn-toggle" type="button" aria-label="Play" disabled>
+            <svg id="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+            <svg id="icon-pause" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+          </button>
+          <button class="ctl-btn" id="btn-next" type="button" aria-label="Next song" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg>
+          </button>
+        </div>
+        <audio id="preview-audio" preload="none"></audio>
+      </div>
+
+      <!-- Find songs -->
+      <section aria-labelledby="find-heading">
+        <div class="section-head">
+          <h2 id="find-heading">Find Songs</h2>
+          <p class="section-note">Search by song title or artist.</p>
+        </div>
+        <form class="search-row" id="search-form">
+          <input type="search" id="search-input" placeholder="Try &ldquo;Goodness of God&rdquo; or &ldquo;Hillsong&rdquo;&hellip;" aria-label="Search for a song by title or artist" autocomplete="off" />
+          <button class="btn gold" type="submit" id="btn-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+            Search
+          </button>
+        </form>
+        <p class="search-status" id="search-status" aria-live="polite"></p>
+        <ul class="song-list" id="results-list"></ul>
+      </section>
+
+      <!-- My Songs -->
+      <section aria-labelledby="songs-heading">
+        <div class="section-head">
+          <h2 id="songs-heading">My Songs</h2>
+          <p class="section-note" id="songs-count"></p>
+        </div>
+        <ul class="song-list" id="songs-list"></ul>
+        <div class="empty-note" id="songs-empty">
+          <p>No songs yet. Search above and add the worship songs you love &mdash; they will be saved here on this device.</p>
+        </div>
+      </section>
+
+      <!-- Playlist -->
+      <section aria-labelledby="playlist-heading">
+        <div class="section-head">
+          <h2 id="playlist-heading">My Playlist</h2>
+          <p class="section-note" id="playlist-count"></p>
+        </div>
+        <div class="playlist-actions">
+          <button class="btn gold" id="btn-play-playlist" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+            Play playlist
+          </button>
+          <button class="btn" id="btn-shuffle" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.14-3.13z"/></svg>
+            Shuffle
+          </button>
+          <button class="btn ghost" id="btn-clear" type="button" disabled>Clear playlist</button>
+        </div>
+        <ul class="song-list" id="playlist-list"></ul>
+        <div class="empty-note" id="playlist-empty">
+          <p>Your playlist is empty. Add songs from My Songs and they will play through in order.</p>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <div class="how">
+        <h2>How it works</h2>
+        <p><strong>Search</strong> for a worship song by title or artist &mdash; the site looks it up for you &mdash; then tap <strong>Add</strong> to save it to My Songs. Tap <strong>Play</strong> on any song to hear it in the player above; each song plays as a 30-second preview.</p>
+        <p>Build a playlist with <strong>Add to playlist</strong>, arrange it with the up and down arrows, and press <strong>Play playlist</strong> &mdash; each song plays through in order, and the next one starts on its own when the current song ends. Your songs and playlist are saved on this device, so they are still here when you come back.</p>
+      </div>
+
+      <!-- Other sites -->
+      <nav class="other-sites" aria-labelledby="other-heading">
+        <h2 id="other-heading">Other sites</h2>
+        <ul class="site-links">
+          <li><a href="https://ejyoungr-hash.github.io/moon/" target="_blank" rel="noopener">Luna &mdash; Earth&rsquo;s Moon <span class="arrow" aria-hidden="true">&rarr;</span></a></li>
+          <li><a href="https://ejyoungr-hash.github.io/daily-devotionals-for-men/" target="_blank" rel="noopener">Daily Devotionals for Men <span class="arrow" aria-hidden="true">&rarr;</span></a></li>
+          <li><a href="https://ejyoungr-hash.github.io/daily-devotionals-for-women/" target="_blank" rel="noopener">Daily Devotionals for Women <span class="arrow" aria-hidden="true">&rarr;</span></a></li>
+          <li><a href="https://ejyoungr-hash.github.io/family-devotional/" target="_blank" rel="noopener">Family Devotional <span class="arrow" aria-hidden="true">&rarr;</span></a></li>
+          <li><a href="https://ejyoungr-hash.github.io/teenager-devotional/" target="_blank" rel="noopener">Teenager Devotional <span class="arrow" aria-hidden="true">&rarr;</span></a></li>
+        </ul>
+      </nav>
+
+      <footer>
+        <p class="verse-line">&ldquo;Let everything that has breath praise the Lord.&rdquo; &mdash; Psalm 150:6</p>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var SONGS_KEY = "worship-music-my-songs";
+        var PLAYLIST_KEY = "worship-music-playlist-v2";
+
+        /* ---------- State ---------- */
+        var mySongs = loadJSON(SONGS_KEY, []);        // [{key,title,artist,artwork,preview}]
+        var songByKey = {};
+        mySongs.forEach(function (s) { songByKey[s.key] = s; });
+        var playlist = loadJSON(PLAYLIST_KEY, []).filter(function (k) { return !!songByKey[k]; });
+        var searchResults = [];                        // iTunes results, not yet saved
+        var context = "songs";                         // "songs" | "playlist"
+        var currentKey = null;
+        var isPlaying = false;
+
+        function loadJSON(key, fallback) {
+          try {
+            var raw = localStorage.getItem(key);
+            if (!raw) return fallback;
+            var v = JSON.parse(raw);
+            return Array.isArray(v) ? v : fallback;
+          } catch (e) { return fallback; }
+        }
+        function saveAll() {
+          try {
+            localStorage.setItem(SONGS_KEY, JSON.stringify(mySongs));
+            localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist));
+          } catch (e) {}
+        }
+
+        /* ---------- DOM refs ---------- */
+        var $ = function (id) { return document.getElementById(id); };
+        var stageEmpty = $("stage-empty"), stageAudio = $("stage-audio");
+        var audioArt = $("audio-art"), audioBackdrop = $("audio-backdrop");
+        var audio = $("preview-audio");
+        var nowTitle = $("now-title"), nowArtist = $("now-artist"), nowSource = $("now-source");
+        var btnToggle = $("btn-toggle"), btnPrev = $("btn-prev"), btnNext = $("btn-next");
+        var iconPlay = $("icon-play"), iconPause = $("icon-pause");
+        var resultsList = $("results-list"), searchStatus = $("search-status");
+        var songsList = $("songs-list"), songsEmpty = $("songs-empty"), songsCount = $("songs-count");
+        var playlistList = $("playlist-list"), playlistEmpty = $("playlist-empty"), playlistCount = $("playlist-count");
+
+        var SVG_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
+        var SVG_PLUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>';
+        var SVG_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 16.6 4.8 12.2l-1.4 1.4 5.8 5.8 11.4-11.4-1.4-1.4z"/></svg>';
+        var SVG_UP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 8h-4.5v6h-5V13H5z"/></svg>';
+        var SVG_DOWN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19 5 11h4.5V5h5v6H19z"/></svg>';
+        var SVG_X = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 12 10.6z"/></svg>';
+
+        function el(tag, cls, text) {
+          var n = document.createElement(tag);
+          if (cls) n.className = cls;
+          if (text != null) n.textContent = text;
+          return n;
+        }
+        function artwork(url, size) {
+          return url ? url.replace("100x100bb.jpg", size + "x" + size + "bb.jpg") : "";
+        }
+
+        /* ---------- Playback ---------- */
+        audio.addEventListener("play", function () { isPlaying = true; renderNowPlaying(); });
+        audio.addEventListener("pause", function () { isPlaying = false; renderNowPlaying(); });
+        audio.addEventListener("ended", function () { onSongEnded(); });
+
+        function showStage(which) {
+          stageEmpty.classList.toggle("on", which === "empty");
+          stageAudio.classList.toggle("on", which === "audio");
+        }
+
+        function playSong(key, ctx) {
+          var song = songByKey[key];
+          if (!song || !song.preview) return;
+          if (ctx) context = ctx;
+          currentKey = key;
+          showStage("audio");
+          audioArt.src = artwork(song.artwork, 600);
+          audioArt.alt = song.title + " artwork";
+          audioBackdrop.style.backgroundImage = song.artwork ? "url(" + artwork(song.artwork, 200) + ")" : "";
+          audio.src = song.preview;
+          var p = audio.play();
+          if (p && p.catch) p.catch(function () { isPlaying = false; renderNowPlaying(); });
+          isPlaying = true;
+          renderAll();
+        }
+
+        function togglePlay() {
+          if (!songByKey[currentKey]) return;
+          if (isPlaying) audio.pause();
+          else { var p = audio.play(); if (p && p.catch) p.catch(function () {}); }
+        }
+
+        function activeList() {
+          return context === "playlist" ? playlist.slice() : mySongs.map(function (s) { return s.key; });
+        }
+        function step(dir) {
+          var list = activeList();
+          if (!list.length) return;
+          var pos = list.indexOf(currentKey);
+          if (pos === -1) pos = 0;
+          var next = pos + dir;
+          if (next < 0) next = list.length - 1;
+          if (next >= list.length) next = 0;
+          playSong(list[next]);
+        }
+        function onSongEnded() {
+          var list = activeList();
+          var pos = list.indexOf(currentKey);
+          if (pos >= 0 && pos < list.length - 1) playSong(list[pos + 1]);
+          else { isPlaying = false; renderNowPlaying(); }
+        }
+
+        /* ---------- Rendering ---------- */
+        function metaFor(song, isCurrent) {
+          var meta = el("div", "song-meta");
+          meta.appendChild(el("p", "song-title", song.title));
+          meta.appendChild(el("p", "song-artist", song.artist));
+          if (isCurrent) {
+            var badges = el("div", "song-badges");
+            badges.appendChild(el("span", "badge", "Now playing"));
+            meta.appendChild(badges);
+          }
+          return meta;
+        }
+        function thumbFor(song) {
+          var img = document.createElement("img");
+          img.className = "thumb";
+          img.alt = "";
+          img.loading = "lazy";
+          if (song.artwork) img.src = artwork(song.artwork, 100);
+          return img;
+        }
+
+        function renderResults() {
+          resultsList.innerHTML = "";
+          searchResults.forEach(function (r) {
+            var already = !!songByKey[r.key];
+            var row = el("li", "song-row");
+            row.appendChild(thumbFor(r));
+            row.appendChild(metaFor(r, false));
+            var actions = el("div", "row-actions");
+            var addBtn = el("button", "btn" + (already ? " added" : " gold"));
+            addBtn.type = "button";
+            addBtn.innerHTML = (already ? SVG_CHECK : SVG_PLUS) + "<span>" + (already ? "In My Songs" : "Add") + "</span>";
+            addBtn.disabled = already;
+            addBtn.setAttribute("aria-label", "Add " + r.title + " to My Songs");
+            addBtn.addEventListener("click", function () { addSong(r); });
+            actions.appendChild(addBtn);
+            row.appendChild(actions);
+            resultsList.appendChild(row);
+          });
+        }
+
+        function renderSongs() {
+          songsList.innerHTML = "";
+          mySongs.forEach(function (song) {
+            var isCurrent = song.key === currentKey;
+            var row = el("li", "song-row" + (isCurrent ? " playing" : ""));
+            row.appendChild(thumbFor(song));
+            row.appendChild(metaFor(song, isCurrent));
+            var actions = el("div", "row-actions");
+
+            var playBtn = el("button", "btn gold");
+            playBtn.type = "button";
+            playBtn.innerHTML = SVG_PLAY + "<span>Play</span>";
+            playBtn.setAttribute("aria-label", "Play " + song.title);
+            playBtn.addEventListener("click", function () { playSong(song.key, "songs"); });
+            actions.appendChild(playBtn);
+
+            var inList = playlist.indexOf(song.key) !== -1;
+            var plBtn = el("button", "btn" + (inList ? " added" : ""));
+            plBtn.type = "button";
+            plBtn.innerHTML = (inList ? SVG_CHECK : SVG_PLUS) + "<span>" + (inList ? "In playlist" : "Add to playlist") + "</span>";
+            plBtn.setAttribute("aria-label", (inList ? song.title + " is in your playlist" : "Add " + song.title + " to playlist"));
+            plBtn.addEventListener("click", function () {
+              if (playlist.indexOf(song.key) === -1) { playlist.push(song.key); saveAll(); renderAll(); }
+            });
+            actions.appendChild(plBtn);
+
+            var rmBtn = el("button", "icon-btn remove");
+            rmBtn.type = "button";
+            rmBtn.innerHTML = SVG_X;
+            rmBtn.setAttribute("aria-label", "Remove " + song.title + " from My Songs");
+            rmBtn.addEventListener("click", function () { removeSong(song.key); });
+            actions.appendChild(rmBtn);
+
+            row.appendChild(actions);
+            songsList.appendChild(row);
+          });
+          songsEmpty.style.display = mySongs.length === 0 ? "block" : "none";
+          songsCount.textContent = mySongs.length === 0 ? "" :
+            mySongs.length + (mySongs.length === 1 ? " song" : " songs") + " — saved on this device";
+        }
+
+        function renderPlaylist() {
+          playlistList.innerHTML = "";
+          playlist.forEach(function (key, idx) {
+            var song = songByKey[key];
+            if (!song) return;
+            var isCurrent = key === currentKey && context === "playlist";
+            var row = el("li", "song-row" + (isCurrent ? " playing" : ""));
+            row.appendChild(el("span", "num", String(idx + 1)));
+            row.appendChild(thumbFor(song));
+            row.appendChild(metaFor(song, isCurrent));
+            var actions = el("div", "row-actions");
+
+            var upBtn = el("button", "icon-btn");
+            upBtn.type = "button";
+            upBtn.innerHTML = SVG_UP;
+            upBtn.setAttribute("aria-label", "Move " + song.title + " up");
+            upBtn.disabled = idx === 0;
+            upBtn.addEventListener("click", function () { moveInPlaylist(idx, -1); });
+            actions.appendChild(upBtn);
+
+            var downBtn = el("button", "icon-btn");
+            downBtn.type = "button";
+            downBtn.innerHTML = SVG_DOWN;
+            downBtn.setAttribute("aria-label", "Move " + song.title + " down");
+            downBtn.disabled = idx === playlist.length - 1;
+            downBtn.addEventListener("click", function () { moveInPlaylist(idx, 1); });
+            actions.appendChild(downBtn);
+
+            var rmBtn = el("button", "icon-btn remove");
+            rmBtn.type = "button";
+            rmBtn.innerHTML = SVG_X;
+            rmBtn.setAttribute("aria-label", "Remove " + song.title + " from playlist");
+            rmBtn.addEventListener("click", function () {
+              playlist.splice(idx, 1);
+              saveAll();
+              renderAll();
+            });
+            actions.appendChild(rmBtn);
+
+            row.appendChild(actions);
+            playlistList.appendChild(row);
+          });
+          playlistEmpty.style.display = playlist.length === 0 ? "block" : "none";
+          playlistCount.textContent = playlist.length === 0 ? "" :
+            playlist.length + (playlist.length === 1 ? " song" : " songs") + " — saved on this device";
+          $("btn-play-playlist").disabled = playlist.length === 0;
+          $("btn-shuffle").disabled = playlist.length < 2;
+          $("btn-clear").disabled = playlist.length === 0;
+        }
+
+        function renderNowPlaying() {
+          var song = songByKey[currentKey];
+          if (!song) {
+            nowTitle.textContent = "Nothing playing";
+            nowArtist.textContent = "";
+            nowSource.textContent = "";
+            btnToggle.disabled = btnPrev.disabled = btnNext.disabled = true;
+          } else {
+            nowTitle.textContent = song.title;
+            nowArtist.textContent = song.artist;
+            var from = "";
+            if (context === "playlist") {
+              var pos = playlist.indexOf(currentKey);
+              from = pos >= 0 ? " · My Playlist, song " + (pos + 1) + " of " + playlist.length : "";
+            } else {
+              from = " · My Songs";
+            }
+            nowSource.textContent = "30-second preview" + from;
+            btnToggle.disabled = btnPrev.disabled = btnNext.disabled = false;
+          }
+          iconPlay.style.display = isPlaying ? "none" : "";
+          iconPause.style.display = isPlaying ? "" : "none";
+          btnToggle.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+        }
+
+        function renderAll() { renderSongs(); renderPlaylist(); renderNowPlaying(); }
+
+        /* ---------- Library edits ---------- */
+        function addSong(result) {
+          if (songByKey[result.key]) return;
+          var song = {
+            key: result.key,
+            title: result.title,
+            artist: result.artist,
+            artwork: result.artwork,
+            preview: result.preview
+          };
+          mySongs.push(song);
+          songByKey[song.key] = song;
+          saveAll();
+          renderResults();
+          renderAll();
+        }
+        function removeSong(key) {
+          mySongs = mySongs.filter(function (s) { return s.key !== key; });
+          delete songByKey[key];
+          playlist = playlist.filter(function (k) { return k !== key; });
+          if (currentKey === key) {
+            currentKey = null;
+            isPlaying = false;
+            try { audio.pause(); } catch (e) {}
+            audio.removeAttribute("src");
+            showStage("empty");
+          }
+          saveAll();
+          renderResults();
+          renderAll();
+        }
+        function moveInPlaylist(idx, dir) {
+          var j = idx + dir;
+          if (j < 0 || j >= playlist.length) return;
+          var t = playlist[idx]; playlist[idx] = playlist[j]; playlist[j] = t;
+          saveAll();
+          renderPlaylist();
+          renderNowPlaying();
+        }
+
+        /* ---------- Search (iTunes) ---------- */
+        function itunesFetch(term) {
+          var url = "https://itunes.apple.com/search?term=" + encodeURIComponent(term) +
+            "&media=music&entity=song&limit=10";
+          if (window.fetch) {
+            return fetch(url).then(function (r) {
+              if (!r.ok) throw new Error("search failed");
+              return r.json();
+            }).catch(function () { return itunesJsonp(url); });
+          }
+          return itunesJsonp(url);
+        }
+        function itunesJsonp(url) {
+          return new Promise(function (resolve, reject) {
+            var cb = "itunesCb" + Math.random().toString(36).slice(2);
+            var script = document.createElement("script");
+            var timer = setTimeout(function () { cleanup(); reject(new Error("timeout")); }, 12000);
+            function cleanup() {
+              clearTimeout(timer);
+              delete window[cb];
+              if (script.parentNode) script.parentNode.removeChild(script);
+            }
+            window[cb] = function (data) { cleanup(); resolve(data); };
+            script.onerror = function () { cleanup(); reject(new Error("load error")); };
+            script.src = url + "&callback=" + cb;
+            document.head.appendChild(script);
+          });
+        }
+
+        $("search-form").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var term = $("search-input").value.trim();
+          if (!term) return;
+          searchStatus.textContent = "Searching…";
+          searchStatus.className = "search-status";
+          resultsList.innerHTML = "";
+          itunesFetch(term).then(function (data) {
+            var seen = {};
+            searchResults = [];
+            (data.results || []).forEach(function (r) {
+              if (!r || r.kind !== "song" || !r.trackName || !r.previewUrl) return;
+              var key = "t" + r.trackId;
+              if (seen[key]) return;
+              seen[key] = true;
+              searchResults.push({
+                key: key,
+                title: r.trackName,
+                artist: r.artistName || "",
+                artwork: r.artworkUrl100 || "",
+                preview: r.previewUrl
+              });
+            });
+            if (searchResults.length === 0) {
+              searchStatus.textContent = "No songs found for “" + term + "”. Try another title or artist.";
+            } else {
+              searchStatus.textContent = searchResults.length + (searchResults.length === 1 ? " song" : " songs") + " found — tap Add to save one to My Songs.";
+            }
+            renderResults();
+          }).catch(function () {
+            searchResults = [];
+            renderResults();
+            searchStatus.textContent = "The search could not go through. Check your connection and try again.";
+            searchStatus.className = "search-status error";
+          });
+        });
+
+        /* ---------- Controls ---------- */
+        btnToggle.addEventListener("click", togglePlay);
+        btnPrev.addEventListener("click", function () { step(-1); });
+        btnNext.addEventListener("click", function () { step(1); });
+        $("btn-play-playlist").addEventListener("click", function () {
+          if (playlist.length) playSong(playlist[0], "playlist");
+        });
+        $("btn-shuffle").addEventListener("click", function () {
+          for (var i = playlist.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = playlist[i]; playlist[i] = playlist[j]; playlist[j] = t;
+          }
+          saveAll();
+          renderPlaylist();
+          renderNowPlaying();
+        });
+        $("btn-clear").addEventListener("click", function () {
+          playlist = [];
+          if (context === "playlist") context = "songs";
+          saveAll();
+          renderAll();
+        });
+
+        renderAll();
+      })();
+    </script>
+  <!-- Real view counter (GitHub copy only) -->
+<p id="view-counter" style="text-align:center;font-size:12px;color:#888;margin:24px 0 8px;">Views: <span id="view-count">&hellip;</span></p>
+<script>
+(function(){var el=document.getElementById('view-count');if(!el)return;var c=new AbortController();var t=setTimeout(function(){c.abort()},5000);fetch('https://countapi.mileshilliard.com/api/v1/hit/ejyoungr-hash-worship-music',{signal:c.signal}).then(function(r){return r.json()}).then(function(d){clearTimeout(t);el.textContent=Number(d.value).toLocaleString()}).catch(function(){var p=document.getElementById('view-counter');if(p)p.style.display='none'})})();
+</script>
+</body>
+</html>
