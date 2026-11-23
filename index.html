@@ -156,7 +156,15 @@
         font-size: 1.7rem; font-weight: 700; margin: 0; color: var(--ink);
       }
       .section-note { color: var(--ink-dim); font-size: 0.9rem; margin: 0; }
-      .shared-note { color: var(--ink-soft); font-size: 0.95rem; margin: -4px 0 12px; }
+      .backup-box {
+        background: var(--navy-800); border: 1px solid var(--line); border-radius: 10px;
+        padding: 14px; margin: 0 0 14px;
+      }
+      .backup-title { font-weight: 700; margin: 0 0 4px; color: var(--ink); }
+      .backup-note { color: var(--ink-soft); font-size: 0.92rem; margin: 0 0 12px; }
+      .backup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+      .backup-status { color: var(--ink-soft); font-size: 0.9rem; margin: 10px 0 0; min-height: 1.2em; }
+      .backup-status.error { color: var(--danger); }
 
       .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
       .search-row input {
@@ -371,10 +379,22 @@
           <h2 id="songs-heading">My Songs</h2>
           <p class="section-note" id="songs-count"></p>
         </div>
-        <p class="shared-note">These songs and playlists are shared &mdash; everyone who visits this site sees the same ones.</p>
+        <div class="backup-box">
+          <p class="backup-title">Backup &amp; restore</p>
+          <p class="backup-note">Your songs and playlists are saved only in this browser on this device. If browser data is cleared, they&rsquo;re lost unless you saved an export first.</p>
+          <div class="backup-actions">
+            <button class="btn gold" type="button" id="btn-export-json">Export JSON</button>
+            <button class="btn" type="button" id="btn-export-csv">Export CSV</button>
+            <button class="btn" type="button" id="btn-import-json">Import JSON</button>
+            <button class="btn" type="button" id="btn-import-csv">Import CSV</button>
+          </div>
+          <p class="backup-status" id="backup-status" aria-live="polite"></p>
+          <input type="file" id="file-json" accept=".json,application/json" hidden />
+          <input type="file" id="file-csv" accept=".csv,text/csv" hidden />
+        </div>
         <ul class="song-list" id="songs-list"></ul>
         <div class="empty-note" id="songs-empty">
-          <p>No songs yet. Search above and add the worship songs you love &mdash; they will appear here in the shared list.</p>
+          <p>No songs yet. Search above and add the worship songs you love &mdash; they will appear here.</p>
         </div>
       </section>
 
@@ -427,7 +447,7 @@
       <div class="how">
         <h2>How it works</h2>
         <p><strong>Search</strong> for a worship song by title or artist &mdash; the site looks it up for you &mdash; then tap <strong>Add</strong> to save it to My Songs. Tap <strong>Play</strong> on any song to hear it in the player above; each song plays as a 30-second preview.</p>
-        <p>Create as many playlists as you like with <strong>Create playlist</strong>, tap a playlist to open it, and fill it with <strong>Add to playlist</strong> &mdash; songs go into whichever playlist is open. Arrange a playlist with the up and down arrows, rename or delete it whenever you like, and press <strong>Play playlist</strong> &mdash; each song plays through in order, and the next one starts on its own when the current song ends. The songs and playlists on this page are shared, so everyone who visits sees the same lists.</p>
+        <p>Create as many playlists as you like with <strong>Create playlist</strong>, tap a playlist to open it, and fill it with <strong>Add to playlist</strong> &mdash; songs go into whichever playlist is open. Arrange a playlist with the up and down arrows, rename or delete it whenever you like, and press <strong>Play playlist</strong> &mdash; each song plays through in order, and the next one starts on its own when the current song ends. Your songs and playlists save automatically in this browser. Use <strong>Export JSON</strong> for an exact backup you can restore with <strong>Import JSON</strong>, or <strong>Export CSV</strong> for a spreadsheet-friendly copy.</p>
       </div>
 
       <!-- Other sites -->
@@ -451,41 +471,61 @@
       (function () {
         "use strict";
 
-        /* ---------- Shared data ----------
-           These lists live in the page itself, so everyone who opens
-           the site sees the same songs and the same playlists.
-           Each song: {key, title, artist, artwork, preview}.
-           SHARED_PLAYLISTS is a list of named playlists:
-           {id, name, songs: [song keys, in playlist order]}. */
-        var SHARED_SONGS = [];
-        var SHARED_PLAYLISTS = [
-          { id: "playlist-1", name: "My Playlist", songs: [] }
-        ];
+        /* ---------- Local storage ----------
+           Songs and playlists save in this browser only (localStorage),
+           so each visitor sees their own lists and a fresh visitor
+           starts empty. Each song: {key, title, artist, artwork, preview}.
+           Playlists: {id, name, songs: [song keys, in playlist order]}. */
+        var STORAGE_KEY = "worship-music-library-v1";
+
+        function loadStored() {
+          try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return null;
+            var data = JSON.parse(raw);
+            if (!data || !Array.isArray(data.songs) || !Array.isArray(data.playlists)) return null;
+            return data;
+          } catch (e) { return null; }
+        }
+        var stored = loadStored();
 
         /* ---------- State ---------- */
-        var mySongs = SHARED_SONGS.slice();            // [{key,title,artist,artwork,preview}]
+        var mySongs = stored ? stored.songs.filter(function (s) {
+          return s && s.key && s.title && s.preview;
+        }).map(function (s) {
+          return { key: String(s.key), title: String(s.title), artist: String(s.artist || ""), artwork: String(s.artwork || ""), preview: String(s.preview) };
+        }) : [];
         var songByKey = {};
         mySongs.forEach(function (s) { songByKey[s.key] = s; });
-        var playlists = SHARED_PLAYLISTS.map(function (p) {
+        var playlists = stored ? stored.playlists.filter(function (p) {
+          return p && p.id && p.name;
+        }).map(function (p) {
           return {
-            id: p.id,
-            name: p.name,
-            songs: (p.songs || []).filter(function (k) { return !!songByKey[k]; })
+            id: String(p.id),
+            name: String(p.name),
+            songs: (Array.isArray(p.songs) ? p.songs : []).filter(function (k) { return !!songByKey[k]; })
           };
-        });
+        }) : [{ id: "playlist-1", name: "My Playlist", songs: [] }];
         var activePlaylistId = playlists.length ? playlists[0].id : null;
         var playingList = null;                        // playlist object playback is running through
         var playlistIdSeq = playlists.length;
+        playlists.forEach(function (p) {
+          var m = /(\d+)$/.exec(p.id);
+          if (m) playlistIdSeq = Math.max(playlistIdSeq, parseInt(m[1], 10));
+        });
         var searchResults = [];                        // iTunes results, not yet added
         var context = "songs";                         // "songs" | "playlist"
         var currentKey = null;
         var isPlaying = false;
 
         function saveAll() {
-          // Keep the shared block in step for this visit. Nothing is
-          // stored in the browser; the lists come from the page itself.
-          SHARED_SONGS = mySongs;
-          SHARED_PLAYLISTS = playlists;
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+              version: 1,
+              songs: mySongs,
+              playlists: playlists
+            }));
+          } catch (e) { /* storage full or unavailable — keep working for this visit */ }
         }
 
         function activePlaylist() {
@@ -663,7 +703,7 @@
           });
           songsEmpty.style.display = mySongs.length === 0 ? "block" : "none";
           songsCount.textContent = mySongs.length === 0 ? "" :
-            mySongs.length + (mySongs.length === 1 ? " song" : " songs") + " — shared with everyone who visits";
+            mySongs.length + (mySongs.length === 1 ? " song" : " songs") + " — saved on this device";
         }
 
         function renderPlaylists() {
@@ -684,7 +724,7 @@
             playlistsList.appendChild(li);
           });
           playlistsCount.textContent = playlists.length === 0 ? "" :
-            playlists.length + (playlists.length === 1 ? " playlist" : " playlists") + " — shared with everyone who visits";
+            playlists.length + (playlists.length === 1 ? " playlist" : " playlists") + " — saved on this device";
           playlistsEmpty.style.display = playlists.length === 0 ? "block" : "none";
 
           // Detail for the selected playlist
@@ -934,6 +974,156 @@
           activePlaylistId = playlists.length ? playlists[0].id : null;
           saveAll();
           renderAll();
+        });
+
+        /* ---------- Backup: export / import ---------- */
+        var backupStatus = $("backup-status");
+        function setBackupStatus(msg, isError) {
+          backupStatus.textContent = msg || "";
+          backupStatus.className = "backup-status" + (isError ? " error" : "");
+        }
+        function downloadFile(name, text, type) {
+          var blob = new Blob([text], { type: type });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = name;
+          document.body.appendChild(a); a.click();
+          setTimeout(function () { URL.revokeObjectURL(url); if (a.parentNode) a.parentNode.removeChild(a); }, 400);
+        }
+        function stamp() {
+          var d = new Date();
+          function p(n) { return (n < 10 ? "0" : "") + n; }
+          return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+        }
+        function csvCell(v) {
+          var s = v == null ? "" : String(v);
+          return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        }
+        function parseCsv(text) {
+          var rows = [], row = [], field = "", inQ = false, i, c;
+          text = String(text).replace(/^\uFEFF/, "");
+          for (i = 0; i < text.length; i++) {
+            c = text[i];
+            if (inQ) {
+              if (c === '"') {
+                if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false;
+              } else field += c;
+            } else if (c === '"') inQ = true;
+            else if (c === ",") { row.push(field); field = ""; }
+            else if (c === "\n") { row.push(field); field = ""; rows.push(row); row = []; }
+            else if (c !== "\r") field += c;
+          }
+          row.push(field); rows.push(row);
+          return rows.filter(function (r) { return r.length > 1 || (r[0] && r[0].trim() !== ""); });
+        }
+        function applyImported(newSongs, newPlaylists, label) {
+          mySongs = newSongs;
+          songByKey = {};
+          mySongs.forEach(function (s) { songByKey[s.key] = s; });
+          playlists = newPlaylists.map(function (p) {
+            return { id: p.id, name: p.name, songs: (p.songs || []).filter(function (k) { return !!songByKey[k]; }) };
+          });
+          playlistIdSeq = playlists.length;
+          playlists.forEach(function (p) {
+            var m = /(\d+)$/.exec(p.id);
+            if (m) playlistIdSeq = Math.max(playlistIdSeq, parseInt(m[1], 10));
+          });
+          activePlaylistId = playlists.length ? playlists[0].id : null;
+          playingList = null; context = "songs";
+          if (currentKey && !songByKey[currentKey]) {
+            currentKey = null; isPlaying = false;
+            try { audio.pause(); } catch (e) {}
+            audio.removeAttribute("src"); showStage("empty");
+          }
+          saveAll(); renderResults(); renderAll();
+          setBackupStatus(label + " — " + mySongs.length + (mySongs.length === 1 ? " song" : " songs") + " and " + playlists.length + (playlists.length === 1 ? " playlist" : " playlists") + " restored and saved on this device.", false);
+        }
+        function cleanSong(s) {
+          if (!s || !s.key || !s.title || !s.preview) return null;
+          return { key: String(s.key), title: String(s.title), artist: String(s.artist || ""), artwork: String(s.artwork || ""), preview: String(s.preview) };
+        }
+
+        $("btn-export-json").addEventListener("click", function () {
+          var payload = { app: "worship-music", version: 1, exportedAt: new Date().toISOString(), songs: mySongs, playlists: playlists };
+          downloadFile("worship-music-backup-" + stamp() + ".json", JSON.stringify(payload, null, 2), "application/json");
+          setBackupStatus("JSON backup downloaded — keep it somewhere safe to restore your exact lists.", false);
+        });
+        $("btn-export-csv").addEventListener("click", function () {
+          var lines = ["Type,Playlist ID,Playlist Name,Song Key,Title,Artist,Artwork,Preview"];
+          mySongs.forEach(function (s) {
+            lines.push(["Song", "", "", s.key, s.title, s.artist, s.artwork, s.preview].map(csvCell).join(","));
+          });
+          playlists.forEach(function (p) {
+            if (!p.songs.length) {
+              lines.push(["Playlist", p.id, p.name, "", "", "", "", ""].map(csvCell).join(","));
+            }
+            p.songs.forEach(function (k) {
+              var s = songByKey[k]; if (!s) return;
+              lines.push(["Playlist Song", p.id, p.name, s.key, s.title, s.artist, s.artwork, s.preview].map(csvCell).join(","));
+            });
+          });
+          downloadFile("worship-music-backup-" + stamp() + ".csv", lines.join("\r\n"), "text/csv");
+          setBackupStatus("CSV backup downloaded — it opens in a spreadsheet and can be re-imported here.", false);
+        });
+        $("btn-import-json").addEventListener("click", function () { $("file-json").click(); });
+        $("btn-import-csv").addEventListener("click", function () { $("file-csv").click(); });
+
+        function readFile(input, done) {
+          var f = input.files && input.files[0];
+          input.value = "";
+          if (!f) return;
+          var reader = new FileReader();
+          reader.onload = function () { done(String(reader.result || "")); };
+          reader.onerror = function () { setBackupStatus("That file could not be read. Try again.", true); };
+          reader.readAsText(f);
+        }
+        $("file-json").addEventListener("change", function () {
+          readFile(this, function (text) {
+            try {
+              var data = JSON.parse(text);
+              var rawSongs = Array.isArray(data) ? data : data.songs;
+              var rawPlaylists = Array.isArray(data) ? [] : data.playlists;
+              if (!Array.isArray(rawSongs) || !Array.isArray(rawPlaylists)) throw new Error("bad format");
+              var songs = [], seen = {};
+              rawSongs.forEach(function (s) { var c = cleanSong(s); if (c && !seen[c.key]) { seen[c.key] = true; songs.push(c); } });
+              var pls = rawPlaylists.filter(function (p) { return p && p.id && p.name; }).map(function (p) {
+                return { id: String(p.id), name: String(p.name), songs: Array.isArray(p.songs) ? p.songs.map(String) : [] };
+              });
+              applyImported(songs, pls, "JSON backup imported");
+            } catch (e) { setBackupStatus("That JSON file doesn't look like a Worship Music backup. Nothing was changed.", true); }
+          });
+        });
+        $("file-csv").addEventListener("change", function () {
+          readFile(this, function (text) {
+            try {
+              var rows = parseCsv(text);
+              if (!rows.length) throw new Error("empty");
+              var header = rows[0].map(function (h) { return h.trim().toLowerCase(); });
+              var iType = header.indexOf("type"), iPid = header.indexOf("playlist id"), iPname = header.indexOf("playlist name"),
+                  iKey = header.indexOf("song key"), iTitle = header.indexOf("title"), iArtist = header.indexOf("artist"),
+                  iArt = header.indexOf("artwork"), iPrev = header.indexOf("preview");
+              if (iType === -1 || iKey === -1 || iTitle === -1 || iPrev === -1) throw new Error("bad header");
+              var songs = [], seen = {}, pls = [], plById = {};
+              function ensureSong(r) {
+                var key = (r[iKey] || "").trim(); if (!key || seen[key]) return key;
+                var c = cleanSong({ key: key, title: (r[iTitle] || "").trim(), artist: iArtist >= 0 ? r[iArtist] : "", artwork: iArt >= 0 ? r[iArt] : "", preview: (r[iPrev] || "").trim() });
+                if (c) { seen[key] = true; songs.push(c); }
+                return key;
+              }
+              rows.slice(1).forEach(function (r) {
+                var type = (r[iType] || "").trim().toLowerCase();
+                if (type === "song") { ensureSong(r); return; }
+                if (type === "playlist" || type === "playlist song") {
+                  var pid = iPid >= 0 ? (r[iPid] || "").trim() : "";
+                  var pname = iPname >= 0 ? (r[iPname] || "").trim() : "";
+                  if (!pid) pid = "playlist-" + (pls.length + 1);
+                  if (!plById[pid]) { var np = { id: pid, name: pname || "Playlist " + (pls.length + 1), songs: [] }; plById[pid] = np; pls.push(np); }
+                  if (type === "playlist song") { var k = ensureSong(r); if (k && plById[pid].songs.indexOf(k) === -1) plById[pid].songs.push(k); }
+                }
+              });
+              applyImported(songs, pls, "CSV backup imported");
+            } catch (e) { setBackupStatus("That CSV file doesn't look like a Worship Music backup. Nothing was changed.", true); }
+          });
         });
 
         renderAll();
