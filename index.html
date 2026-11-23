@@ -156,6 +156,7 @@
         font-size: 1.7rem; font-weight: 700; margin: 0; color: var(--ink);
       }
       .section-note { color: var(--ink-dim); font-size: 0.9rem; margin: 0; }
+      .shared-note { color: var(--ink-soft); font-size: 0.95rem; margin: -4px 0 12px; }
 
       .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
       .search-row input {
@@ -351,9 +352,10 @@
           <h2 id="songs-heading">My Songs</h2>
           <p class="section-note" id="songs-count"></p>
         </div>
+        <p class="shared-note">These songs and playlists are shared &mdash; everyone who visits this site sees the same ones.</p>
         <ul class="song-list" id="songs-list"></ul>
         <div class="empty-note" id="songs-empty">
-          <p>No songs yet. Search above and add the worship songs you love &mdash; they will be saved here on this device.</p>
+          <p>No songs yet. Search above and add the worship songs you love &mdash; they will appear here in the shared list.</p>
         </div>
       </section>
 
@@ -384,7 +386,7 @@
       <div class="how">
         <h2>How it works</h2>
         <p><strong>Search</strong> for a worship song by title or artist &mdash; the site looks it up for you &mdash; then tap <strong>Add</strong> to save it to My Songs. Tap <strong>Play</strong> on any song to hear it in the player above; each song plays as a 30-second preview.</p>
-        <p>Build a playlist with <strong>Add to playlist</strong>, arrange it with the up and down arrows, and press <strong>Play playlist</strong> &mdash; each song plays through in order, and the next one starts on its own when the current song ends. Your songs and playlist are saved on this device, so they are still here when you come back.</p>
+        <p>Build a playlist with <strong>Add to playlist</strong>, arrange it with the up and down arrows, and press <strong>Play playlist</strong> &mdash; each song plays through in order, and the next one starts on its own when the current song ends. The songs and playlist on this page are shared, so everyone who visits sees the same lists.</p>
       </div>
 
       <!-- Other sites -->
@@ -408,32 +410,29 @@
       (function () {
         "use strict";
 
-        var SONGS_KEY = "worship-music-my-songs";
-        var PLAYLIST_KEY = "worship-music-playlist-v2";
+        /* ---------- Shared data ----------
+           These lists live in the page itself, so everyone who opens
+           the site sees the same songs and the same playlist.
+           Each song: {key, title, artist, artwork, preview}.
+           SHARED_PLAYLISTS holds song keys, in playlist order. */
+        var SHARED_SONGS = [];
+        var SHARED_PLAYLISTS = [];
 
         /* ---------- State ---------- */
-        var mySongs = loadJSON(SONGS_KEY, []);        // [{key,title,artist,artwork,preview}]
+        var mySongs = SHARED_SONGS.slice();            // [{key,title,artist,artwork,preview}]
         var songByKey = {};
         mySongs.forEach(function (s) { songByKey[s.key] = s; });
-        var playlist = loadJSON(PLAYLIST_KEY, []).filter(function (k) { return !!songByKey[k]; });
-        var searchResults = [];                        // iTunes results, not yet saved
+        var playlist = SHARED_PLAYLISTS.slice().filter(function (k) { return !!songByKey[k]; });
+        var searchResults = [];                        // iTunes results, not yet added
         var context = "songs";                         // "songs" | "playlist"
         var currentKey = null;
         var isPlaying = false;
 
-        function loadJSON(key, fallback) {
-          try {
-            var raw = localStorage.getItem(key);
-            if (!raw) return fallback;
-            var v = JSON.parse(raw);
-            return Array.isArray(v) ? v : fallback;
-          } catch (e) { return fallback; }
-        }
         function saveAll() {
-          try {
-            localStorage.setItem(SONGS_KEY, JSON.stringify(mySongs));
-            localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist));
-          } catch (e) {}
+          // Keep the shared block in step for this visit. Nothing is
+          // stored in the browser; the lists come from the page itself.
+          SHARED_SONGS = mySongs;
+          SHARED_PLAYLISTS = playlist;
         }
 
         /* ---------- DOM refs ---------- */
@@ -596,7 +595,7 @@
           });
           songsEmpty.style.display = mySongs.length === 0 ? "block" : "none";
           songsCount.textContent = mySongs.length === 0 ? "" :
-            mySongs.length + (mySongs.length === 1 ? " song" : " songs") + " — saved on this device";
+            mySongs.length + (mySongs.length === 1 ? " song" : " songs") + " — shared with everyone who visits";
         }
 
         function renderPlaylist() {
@@ -643,7 +642,7 @@
           });
           playlistEmpty.style.display = playlist.length === 0 ? "block" : "none";
           playlistCount.textContent = playlist.length === 0 ? "" :
-            playlist.length + (playlist.length === 1 ? " song" : " songs") + " — saved on this device";
+            playlist.length + (playlist.length === 1 ? " song" : " songs") + " — shared with everyone who visits";
           $("btn-play-playlist").disabled = playlist.length === 0;
           $("btn-shuffle").disabled = playlist.length < 2;
           $("btn-clear").disabled = playlist.length === 0;
