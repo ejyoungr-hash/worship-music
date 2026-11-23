@@ -243,6 +243,25 @@
       .empty-note p { margin: 0; }
       .playlist-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 
+      /* ---------- Playlist selector ---------- */
+      .playlist-tabs { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 8px; }
+      .playlist-tab {
+        appearance: none; cursor: pointer; font: inherit; text-align: left; width: 100%;
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        min-height: 48px; padding: 10px 14px;
+        background: var(--navy-800); border: 1px solid var(--line); border-radius: 10px; color: var(--ink);
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .playlist-tab:hover { border-color: var(--gold-deep); }
+      .playlist-tab.active { border-color: var(--gold); background: #182a52; }
+      .playlist-tab .tab-name { font-weight: 600; overflow-wrap: anywhere; }
+      .playlist-tab .tab-count { color: var(--ink-dim); font-size: 0.85rem; flex: none; }
+      h3 {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 1.4rem; font-weight: 700; margin: 0; color: var(--ink);
+      }
+      .rename-row { margin-bottom: 12px; }
+
       /* ---------- How it works ---------- */
       .how {
         margin-top: 34px;
@@ -359,26 +378,48 @@
         </div>
       </section>
 
-      <!-- Playlist -->
-      <section aria-labelledby="playlist-heading">
+      <!-- Playlists -->
+      <section aria-labelledby="playlists-heading">
         <div class="section-head">
-          <h2 id="playlist-heading">My Playlist</h2>
-          <p class="section-note" id="playlist-count"></p>
+          <h2 id="playlists-heading">Playlists</h2>
+          <p class="section-note" id="playlists-count"></p>
         </div>
-        <div class="playlist-actions">
-          <button class="btn gold" id="btn-play-playlist" type="button" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
-            Play playlist
+        <form class="search-row" id="create-form">
+          <input type="text" id="create-input" placeholder="Name a new playlist&hellip;" aria-label="Name for the new playlist" maxlength="60" autocomplete="off" />
+          <button class="btn gold" type="submit" id="btn-create">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+            Create playlist
           </button>
-          <button class="btn" id="btn-shuffle" type="button" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.14-3.13z"/></svg>
-            Shuffle
-          </button>
-          <button class="btn ghost" id="btn-clear" type="button" disabled>Clear playlist</button>
+        </form>
+        <ul class="playlist-tabs" id="playlists-list"></ul>
+        <div class="empty-note" id="playlists-empty" style="display:none">
+          <p>No playlists yet. Name one above and tap Create playlist to start.</p>
         </div>
-        <ul class="song-list" id="playlist-list"></ul>
-        <div class="empty-note" id="playlist-empty">
-          <p>Your playlist is empty. Add songs from My Songs and they will play through in order.</p>
+        <div id="playlist-detail">
+          <div class="section-head">
+            <h3 id="detail-name"></h3>
+            <p class="section-note" id="playlist-count"></p>
+          </div>
+          <form class="search-row rename-row" id="rename-form">
+            <input type="text" id="rename-input" aria-label="Playlist name" maxlength="60" autocomplete="off" />
+            <button class="btn" type="submit">Rename</button>
+            <button class="btn ghost" type="button" id="btn-delete-playlist">Delete playlist</button>
+          </form>
+          <div class="playlist-actions">
+            <button class="btn gold" id="btn-play-playlist" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+              Play playlist
+            </button>
+            <button class="btn" id="btn-shuffle" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.14-3.13z"/></svg>
+              Shuffle
+            </button>
+            <button class="btn ghost" id="btn-clear" type="button" disabled>Clear playlist</button>
+          </div>
+          <ul class="song-list" id="playlist-list"></ul>
+          <div class="empty-note" id="playlist-empty">
+            <p>This playlist is empty. Add songs from My Songs and they will play through in order.</p>
+          </div>
         </div>
       </section>
 
@@ -386,7 +427,7 @@
       <div class="how">
         <h2>How it works</h2>
         <p><strong>Search</strong> for a worship song by title or artist &mdash; the site looks it up for you &mdash; then tap <strong>Add</strong> to save it to My Songs. Tap <strong>Play</strong> on any song to hear it in the player above; each song plays as a 30-second preview.</p>
-        <p>Build a playlist with <strong>Add to playlist</strong>, arrange it with the up and down arrows, and press <strong>Play playlist</strong> &mdash; each song plays through in order, and the next one starts on its own when the current song ends. The songs and playlist on this page are shared, so everyone who visits sees the same lists.</p>
+        <p>Create as many playlists as you like with <strong>Create playlist</strong>, tap a playlist to open it, and fill it with <strong>Add to playlist</strong> &mdash; songs go into whichever playlist is open. Arrange a playlist with the up and down arrows, rename or delete it whenever you like, and press <strong>Play playlist</strong> &mdash; each song plays through in order, and the next one starts on its own when the current song ends. The songs and playlists on this page are shared, so everyone who visits sees the same lists.</p>
       </div>
 
       <!-- Other sites -->
@@ -412,17 +453,29 @@
 
         /* ---------- Shared data ----------
            These lists live in the page itself, so everyone who opens
-           the site sees the same songs and the same playlist.
+           the site sees the same songs and the same playlists.
            Each song: {key, title, artist, artwork, preview}.
-           SHARED_PLAYLISTS holds song keys, in playlist order. */
+           SHARED_PLAYLISTS is a list of named playlists:
+           {id, name, songs: [song keys, in playlist order]}. */
         var SHARED_SONGS = [];
-        var SHARED_PLAYLISTS = [];
+        var SHARED_PLAYLISTS = [
+          { id: "playlist-1", name: "My Playlist", songs: [] }
+        ];
 
         /* ---------- State ---------- */
         var mySongs = SHARED_SONGS.slice();            // [{key,title,artist,artwork,preview}]
         var songByKey = {};
         mySongs.forEach(function (s) { songByKey[s.key] = s; });
-        var playlist = SHARED_PLAYLISTS.slice().filter(function (k) { return !!songByKey[k]; });
+        var playlists = SHARED_PLAYLISTS.map(function (p) {
+          return {
+            id: p.id,
+            name: p.name,
+            songs: (p.songs || []).filter(function (k) { return !!songByKey[k]; })
+          };
+        });
+        var activePlaylistId = playlists.length ? playlists[0].id : null;
+        var playingList = null;                        // playlist object playback is running through
+        var playlistIdSeq = playlists.length;
         var searchResults = [];                        // iTunes results, not yet added
         var context = "songs";                         // "songs" | "playlist"
         var currentKey = null;
@@ -432,7 +485,14 @@
           // Keep the shared block in step for this visit. Nothing is
           // stored in the browser; the lists come from the page itself.
           SHARED_SONGS = mySongs;
-          SHARED_PLAYLISTS = playlist;
+          SHARED_PLAYLISTS = playlists;
+        }
+
+        function activePlaylist() {
+          for (var i = 0; i < playlists.length; i++) {
+            if (playlists[i].id === activePlaylistId) return playlists[i];
+          }
+          return null;
         }
 
         /* ---------- DOM refs ---------- */
@@ -446,6 +506,9 @@
         var resultsList = $("results-list"), searchStatus = $("search-status");
         var songsList = $("songs-list"), songsEmpty = $("songs-empty"), songsCount = $("songs-count");
         var playlistList = $("playlist-list"), playlistEmpty = $("playlist-empty"), playlistCount = $("playlist-count");
+        var playlistsList = $("playlists-list"), playlistsCount = $("playlists-count"), playlistsEmpty = $("playlists-empty");
+        var playlistDetail = $("playlist-detail"), detailName = $("detail-name");
+        var createInput = $("create-input"), renameInput = $("rename-input");
 
         var SVG_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
         var SVG_PLUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>';
@@ -478,6 +541,7 @@
           var song = songByKey[key];
           if (!song || !song.preview) return;
           if (ctx) context = ctx;
+          if (ctx === "playlist") playingList = activePlaylist();
           currentKey = key;
           showStage("audio");
           audioArt.src = artwork(song.artwork, 600);
@@ -497,7 +561,8 @@
         }
 
         function activeList() {
-          return context === "playlist" ? playlist.slice() : mySongs.map(function (s) { return s.key; });
+          if (context === "playlist" && playingList) return playingList.songs.slice();
+          return mySongs.map(function (s) { return s.key; });
         }
         function step(dir) {
           var list = activeList();
@@ -573,13 +638,16 @@
             playBtn.addEventListener("click", function () { playSong(song.key, "songs"); });
             actions.appendChild(playBtn);
 
-            var inList = playlist.indexOf(song.key) !== -1;
+            var ap = activePlaylist();
+            var inList = ap ? ap.songs.indexOf(song.key) !== -1 : false;
             var plBtn = el("button", "btn" + (inList ? " added" : ""));
             plBtn.type = "button";
             plBtn.innerHTML = (inList ? SVG_CHECK : SVG_PLUS) + "<span>" + (inList ? "In playlist" : "Add to playlist") + "</span>";
-            plBtn.setAttribute("aria-label", (inList ? song.title + " is in your playlist" : "Add " + song.title + " to playlist"));
+            plBtn.disabled = !ap;
+            plBtn.setAttribute("aria-label", (inList ? song.title + " is in the selected playlist" : "Add " + song.title + " to the selected playlist"));
             plBtn.addEventListener("click", function () {
-              if (playlist.indexOf(song.key) === -1) { playlist.push(song.key); saveAll(); renderAll(); }
+              var target = activePlaylist();
+              if (target && target.songs.indexOf(song.key) === -1) { target.songs.push(song.key); saveAll(); renderAll(); }
             });
             actions.appendChild(plBtn);
 
@@ -598,12 +666,38 @@
             mySongs.length + (mySongs.length === 1 ? " song" : " songs") + " — shared with everyone who visits";
         }
 
-        function renderPlaylist() {
+        function renderPlaylists() {
+          // Selector list — tap a playlist to open it
+          playlistsList.innerHTML = "";
+          playlists.forEach(function (p) {
+            var li = el("li");
+            var tab = el("button", "playlist-tab" + (p.id === activePlaylistId ? " active" : ""));
+            tab.type = "button";
+            tab.appendChild(el("span", "tab-name", p.name));
+            tab.appendChild(el("span", "tab-count", p.songs.length + (p.songs.length === 1 ? " song" : " songs")));
+            tab.setAttribute("aria-label", "Show playlist " + p.name);
+            tab.addEventListener("click", function () {
+              activePlaylistId = p.id;
+              renderAll();
+            });
+            li.appendChild(tab);
+            playlistsList.appendChild(li);
+          });
+          playlistsCount.textContent = playlists.length === 0 ? "" :
+            playlists.length + (playlists.length === 1 ? " playlist" : " playlists") + " — shared with everyone who visits";
+          playlistsEmpty.style.display = playlists.length === 0 ? "block" : "none";
+
+          // Detail for the selected playlist
+          var ap = activePlaylist();
+          playlistDetail.style.display = ap ? "block" : "none";
           playlistList.innerHTML = "";
-          playlist.forEach(function (key, idx) {
+          if (!ap) { playlistCount.textContent = ""; return; }
+          detailName.textContent = ap.name;
+          if (document.activeElement !== renameInput) renameInput.value = ap.name;
+          ap.songs.forEach(function (key, idx) {
             var song = songByKey[key];
             if (!song) return;
-            var isCurrent = key === currentKey && context === "playlist";
+            var isCurrent = key === currentKey && context === "playlist" && playingList === ap;
             var row = el("li", "song-row" + (isCurrent ? " playing" : ""));
             row.appendChild(el("span", "num", String(idx + 1)));
             row.appendChild(thumbFor(song));
@@ -622,16 +716,16 @@
             downBtn.type = "button";
             downBtn.innerHTML = SVG_DOWN;
             downBtn.setAttribute("aria-label", "Move " + song.title + " down");
-            downBtn.disabled = idx === playlist.length - 1;
+            downBtn.disabled = idx === ap.songs.length - 1;
             downBtn.addEventListener("click", function () { moveInPlaylist(idx, 1); });
             actions.appendChild(downBtn);
 
             var rmBtn = el("button", "icon-btn remove");
             rmBtn.type = "button";
             rmBtn.innerHTML = SVG_X;
-            rmBtn.setAttribute("aria-label", "Remove " + song.title + " from playlist");
+            rmBtn.setAttribute("aria-label", "Remove " + song.title + " from " + ap.name);
             rmBtn.addEventListener("click", function () {
-              playlist.splice(idx, 1);
+              ap.songs.splice(idx, 1);
               saveAll();
               renderAll();
             });
@@ -640,12 +734,12 @@
             row.appendChild(actions);
             playlistList.appendChild(row);
           });
-          playlistEmpty.style.display = playlist.length === 0 ? "block" : "none";
-          playlistCount.textContent = playlist.length === 0 ? "" :
-            playlist.length + (playlist.length === 1 ? " song" : " songs") + " — shared with everyone who visits";
-          $("btn-play-playlist").disabled = playlist.length === 0;
-          $("btn-shuffle").disabled = playlist.length < 2;
-          $("btn-clear").disabled = playlist.length === 0;
+          playlistEmpty.style.display = ap.songs.length === 0 ? "block" : "none";
+          playlistCount.textContent = ap.songs.length === 0 ? "Empty" :
+            ap.songs.length + (ap.songs.length === 1 ? " song" : " songs");
+          $("btn-play-playlist").disabled = ap.songs.length === 0;
+          $("btn-shuffle").disabled = ap.songs.length < 2;
+          $("btn-clear").disabled = ap.songs.length === 0;
         }
 
         function renderNowPlaying() {
@@ -659,9 +753,9 @@
             nowTitle.textContent = song.title;
             nowArtist.textContent = song.artist;
             var from = "";
-            if (context === "playlist") {
-              var pos = playlist.indexOf(currentKey);
-              from = pos >= 0 ? " · My Playlist, song " + (pos + 1) + " of " + playlist.length : "";
+            if (context === "playlist" && playingList) {
+              var pos = playingList.songs.indexOf(currentKey);
+              from = pos >= 0 ? " · " + playingList.name + ", song " + (pos + 1) + " of " + playingList.songs.length : " · " + playingList.name;
             } else {
               from = " · My Songs";
             }
@@ -673,7 +767,7 @@
           btnToggle.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
         }
 
-        function renderAll() { renderSongs(); renderPlaylist(); renderNowPlaying(); }
+        function renderAll() { renderSongs(); renderPlaylists(); renderNowPlaying(); }
 
         /* ---------- Library edits ---------- */
         function addSong(result) {
@@ -694,7 +788,9 @@
         function removeSong(key) {
           mySongs = mySongs.filter(function (s) { return s.key !== key; });
           delete songByKey[key];
-          playlist = playlist.filter(function (k) { return k !== key; });
+          playlists.forEach(function (p) {
+            p.songs = p.songs.filter(function (k) { return k !== key; });
+          });
           if (currentKey === key) {
             currentKey = null;
             isPlaying = false;
@@ -707,11 +803,13 @@
           renderAll();
         }
         function moveInPlaylist(idx, dir) {
+          var ap = activePlaylist();
+          if (!ap) return;
           var j = idx + dir;
-          if (j < 0 || j >= playlist.length) return;
-          var t = playlist[idx]; playlist[idx] = playlist[j]; playlist[j] = t;
+          if (j < 0 || j >= ap.songs.length) return;
+          var t = ap.songs[idx]; ap.songs[idx] = ap.songs[j]; ap.songs[j] = t;
           saveAll();
-          renderPlaylist();
+          renderPlaylists();
           renderNowPlaying();
         }
 
@@ -786,20 +884,54 @@
         btnPrev.addEventListener("click", function () { step(-1); });
         btnNext.addEventListener("click", function () { step(1); });
         $("btn-play-playlist").addEventListener("click", function () {
-          if (playlist.length) playSong(playlist[0], "playlist");
+          var ap = activePlaylist();
+          if (ap && ap.songs.length) playSong(ap.songs[0], "playlist");
         });
         $("btn-shuffle").addEventListener("click", function () {
-          for (var i = playlist.length - 1; i > 0; i--) {
+          var ap = activePlaylist();
+          if (!ap) return;
+          for (var i = ap.songs.length - 1; i > 0; i--) {
             var j = Math.floor(Math.random() * (i + 1));
-            var t = playlist[i]; playlist[i] = playlist[j]; playlist[j] = t;
+            var t = ap.songs[i]; ap.songs[i] = ap.songs[j]; ap.songs[j] = t;
           }
           saveAll();
-          renderPlaylist();
+          renderPlaylists();
           renderNowPlaying();
         });
         $("btn-clear").addEventListener("click", function () {
-          playlist = [];
-          if (context === "playlist") context = "songs";
+          var ap = activePlaylist();
+          if (!ap) return;
+          ap.songs = [];
+          if (context === "playlist" && playingList === ap) { context = "songs"; playingList = null; }
+          saveAll();
+          renderAll();
+        });
+        $("create-form").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var name = createInput.value.trim();
+          if (!name) name = "Playlist " + (playlists.length + 1);
+          var id;
+          do { playlistIdSeq += 1; id = "playlist-" + playlistIdSeq; }
+          while (playlists.some(function (p) { return p.id === id; }));
+          playlists.push({ id: id, name: name, songs: [] });
+          activePlaylistId = id;
+          createInput.value = "";
+          saveAll();
+          renderAll();
+        });
+        $("rename-form").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var ap = activePlaylist();
+          if (!ap) return;
+          var name = renameInput.value.trim();
+          if (name) { ap.name = name; saveAll(); renderAll(); }
+        });
+        $("btn-delete-playlist").addEventListener("click", function () {
+          var ap = activePlaylist();
+          if (!ap) return;
+          playlists = playlists.filter(function (p) { return p.id !== ap.id; });
+          if (playingList === ap) { playingList = null; if (context === "playlist") context = "songs"; }
+          activePlaylistId = playlists.length ? playlists[0].id : null;
           saveAll();
           renderAll();
         });
