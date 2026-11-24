@@ -1479,7 +1479,7 @@
   <!-- Real view counter (GitHub copy only) -->
 <p id="view-counter" style="text-align:center;font-size:12px;color:#888;margin:24px 0 8px;">Views: <span id="view-count">&hellip;</span></p>
 <script>
-(function(){var el=document.getElementById('view-count');if(!el)return;var c=new AbortController();var t=setTimeout(function(){c.abort()},5000);fetch('https://countapi.mileshilliard.com/api/v1/hit/ejyoungr-hash-worship-music',{signal:c.signal}).then(function(r){return r.json()}).then(function(d){clearTimeout(t);el.textContent=Number(d.value).toLocaleString()}).catch(function(){var p=document.getElementById('view-counter');if(p)p.style.display='none'})})();
+(function(){var el=document.getElementById('view-count');if(!el)return;var c=new AbortController();var t=setTimeout(function(){c.abort()},15000);fetch('https://countapi.mileshilliard.com/api/v1/hit/ejyoungr-hash-worship-music',{signal:c.signal}).then(function(r){return r.json()}).then(function(d){clearTimeout(t);el.textContent=Number(d.value).toLocaleString()}).catch(function(){clearTimeout(t);el.textContent='\u2013'})})();
 </script>
 </body>
 </html>
